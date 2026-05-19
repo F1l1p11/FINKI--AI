@@ -1,7 +1,7 @@
-# from sklearn import MinMaxScaler, MLPClassifier
-
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.neural_network import MLPClassifier
+from sklearn import MinMaxScaler, MLPClassifier
+# from sklearn.metrics import accuracy_score
+# from sklearn.preprocessing import MinMaxScaler
+# from sklearn.neural_network import MLPClassifier
 
 dataset = [[30, 92726, 2.0, 9, 2011, -37.8497, 144.968, 10, 0],
     [43, 95408, 0.0, 12, 2014, -37.8497, 144.968, 10, 0],
@@ -120,10 +120,11 @@ if __name__ == '__main__':
     test_X = [row[:-1] for row in dataset[split:]]
     test_Y = [row[-1] for row in dataset[split:]]
 
-    scaler = MinMaxScaler(feature_range=(-1, 1))
+    scaler = MinMaxScaler(feature_range=(-1,1))
     scaler.fit(train_X)
-    train_X_scaled = scaler.transform(train_X)
-    test_X_scaled = scaler.transform(test_X)
+    train_X = scaler.transform(train_X)
+    test_X = scaler.transform(test_X)
+    sample = scaler.transform([sample])
 
     model = MLPClassifier(
         hidden_layer_sizes=neurons,
@@ -133,19 +134,30 @@ if __name__ == '__main__':
         random_state=0
     )
 
-    model.fit(train_X_scaled, train_Y)
+    model.fit(train_X, train_Y)
+    p_train = model.predict(train_X)
+    p_test = model.predict(test_X)
 
-    train_prediction = model.predict(train_X_scaled)
-    test_prediction = model.predict(test_X_scaled)
+    accuracy_train = sum(1 for v, p in zip(train_Y, p_train) if v == p) / len(train_Y)
+    accuracy_test = sum(1 for v, p in zip(test_Y, p_test) if v == p) / len(test_Y)
 
-    train_acc = sum(v == p for v, p in zip(train_Y, train_prediction)) / len(train_Y)
-    test_acc = sum(v == p for v, p in zip(test_Y, test_prediction)) / len(test_Y)
-
-    if train_acc > test_acc * 1.15:
-        # train_X_modified = [row[:col_index] + row[col_index+1:] for row in train_X_scaled]
-        # test_X_modified = [row[:col_index] + row[col_index+1:] for row in test_X_scaled]
+    if accuracy_train > accuracy_test * 1.15:
+        new_train = []
+        for row in train_X:
+            new_row = []
+            for index,element in enumerate(row):
+                if index != col_index:
+                    new_row.append(element)
+            new_train.append(new_row)
+        new_sample = []
+        for index,element in enumerate(sample[0]):
+            if index != col_index:
+                new_sample.append(element)
+        model.fit(new_train, train_Y)
+        prediction = model.predict([new_sample])[0]
         print("Se sluchuva overfitting")
-        print("1")
+        print(prediction)
     else:
+        prediction = model.predict(sample)[0]
         print("Ne se sluchuva overfitting")
-        print("0")
+        print(prediction)
