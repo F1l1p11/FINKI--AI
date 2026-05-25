@@ -430,102 +430,70 @@ if __name__ == '__main__':
     warnings.filterwarnings('ignore', category=ConvergenceWarning)
     model = input()
     col = int(input())
+    classifier = None
+    if model == "NB":
+        classifier = GaussianNB()
+    else:
+        classifier = MLPClassifier(hidden_layer_sizes=(50,), activation="relu",learning_rate_init=0.001,random_state=0)
     class_0 = [row for row in data if row[-1] == 0]
     class_1 = [row for row in data if row[-1] == 1]
+    split_0 = int(len(class_0) / 4)
+    split_1 = int(len(class_1) / 4)
+    first_set = class_0[:int(len(class_0) / 4)] + class_1[:int(len(class_1) / 4)]
+    second_set = class_0[int(len(class_0) / 4):int((len(class_0) / 4) * 2)] + class_1[int(len(class_1) / 4):int((len(class_1) / 4) * 2)]
+    third_set = class_0[int((len(class_0) / 4) * 2):int((len(class_0) / 4) * 3)] + class_1[int((len(class_1) / 4) * 2):int((len(class_1) / 4) * 3)]
+    fourth_set = class_0[int((len(class_0) / 4) * 3):] + class_1[int((len(class_1) / 4) * 3):]
 
-    first = class_0[:int(len(class_0) / 4)] + class_1[:int(len(class_1) / 4)]
-    second = class_0[int(len(class_0) / 4):int((len(class_0) / 4) * 2)] + class_1[
-        int(len(class_1) / 4):int((len(class_1) / 4) * 2)]
-    third = class_0[int((len(class_0) / 4) * 2):int((len(class_0) / 4) * 3)] + class_1[
-        int((len(class_1) / 4) * 2):int((len(class_1) / 4) * 3)]
-    fourth = class_0[int((len(class_0) / 4) * 3):] + class_1[int((len(class_1) / 4) * 3):]
 
-    # fourth second third for training and first for testing
-    first_Train_X = [row[:-1] for row in fourth] + [row[:-1] for row in second] + [row[:-1] for row in third]
-    first_Train_Y = [row[-1] for row in fourth] + [row[-1] for row in second] + [row[-1] for row in third]
-    first_Test_X = [row[:-1] for row in first]
-    first_Test_Y = [row[-1] for row in first]
+    # print(len(first_set))
+    # print(len(second_set))
+    # print(len(third_set))
+    # print(len(fourth_set))
+    data_sets = [first_set, second_set, third_set, fourth_set]
 
-    # first third fourth for training and second for testing
-    second_Train_X = [row[:-1] for row in first] + [row[:-1] for row in third] + [row[:-1] for row in fourth]
-    second_Train_Y = [row[-1] for row in first] + [row[-1] for row in third] + [row[-1] for row in fourth]
-    second_Test_X = [row[:-1] for row in second]
-    second_Test_Y = [row[-1] for row in second]
+    max_accuracy = 0
+    max_index = 0
+    accuracies = []
 
-    # first second fourth for training and third for testing
-    third_Train_X = [row[:-1] for row in first] + [row[:-1] for row in second] + [row[:-1] for row in fourth]
-    third_Train_Y = [row[-1] for row in first] + [row[-1] for row in second] + [row[-1] for row in fourth]
-    third_Test_X = [row[:-1] for row in third]
-    third_Test_Y = [row[-1] for row in third]
+    for i in range (4):
+        train_X = []
+        train_Y = []
+        test_X = []
+        test_Y = []
+        for j in range(4):
+            if i != j:
+                train_X += [row[:-1] for row in data_sets[j]]
+                train_Y += [row[-1] for row in data_sets[j]]
+            else:
+                test_X = [row[:-1] for row in data_sets[j]]
+                test_Y = [row[-1] for row in data_sets[j]]
 
-    # first second third for training and fourth for testing
-    fourth_Train_X = [row[:-1] for row in first] + [row[:-1] for row in second] + [row[:-1] for row in third]
-    fourth_Train_Y = [row[-1] for row in first] + [row[-1] for row in second] + [row[-1] for row in third]
-    fourth_Test_X = [row[:-1] for row in fourth]
-    fourth_Test_Y = [row[-1] for row in fourth]
+        classifier.fit(train_X, train_Y)
+        prediction = classifier.predict(test_X)
+        accuracy = accuracy_score(test_Y, prediction)
+        accuracies.append(accuracy)
+        if accuracy >= max_accuracy:
+            max_accuracy = accuracy
+            max_index = i
+    train_X = []
+    train_Y = []
+    test_X = []
+    test_Y = []
+    for i in range (4):
+        filtered_rows = [
+            [element for index, element in enumerate(row) if index != col]
+            for row in data_sets[i]
+        ]
+        if i != max_index:
+            train_X += [row[:-1] for row in filtered_rows]
+            train_Y += [row[-1] for row in filtered_rows]
+        else:
+            test_X += [row[:-1] for row in filtered_rows]
+            test_Y += [row[-1] for row in filtered_rows]
 
-    # print(len(first),len(second),len(third),len(fourth))
-    # print(len(data))
-    if model == "NB":
-        model = GaussianNB()
-    if model == "MLP":
-        model = MLPClassifier(
-            hidden_layer_sizes=(50,),
-            learning_rate_init=0.001,
-            activation="relu",
-            random_state=0,
-        )
 
-    correctness = 0
-    maximum = 0
-    index = 0
-    # first
-    model.fit(first_Train_X, first_Train_Y)
-    predictions_1 = model.predict(first_Test_X)
-    acc = accuracy_score(first_Test_Y, predictions_1)
-    correctness += acc
-    if acc > maximum:
-        maximum = acc
-        index = 0
+    classifier.fit(train_X, train_Y)
+    accuracy_latest = accuracy_score(test_Y, classifier.predict(test_X))
 
-    # second
-    model.fit(second_Train_X, second_Train_Y)
-    predictions_2 = model.predict(second_Test_X)
-    acc = accuracy_score(second_Test_Y, predictions_2)
-    correctness += acc
-    if acc > maximum:
-        maximum = acc
-        index = 1
-
-    # third
-    model.fit(third_Train_X, third_Train_Y)
-    predictions_3 = model.predict(third_Test_X)
-    acc = accuracy_score(third_Test_Y, predictions_3)
-    correctness += acc
-    if acc > maximum:
-        maximum = acc
-        index = 2
-
-    # fourth
-    model.fit(fourth_Train_X, fourth_Train_Y)
-    predictions_4 = model.predict(fourth_Test_X)
-    acc = accuracy_score(fourth_Test_Y, predictions_4)
-    correctness += acc
-    if acc > maximum:
-        maximum = acc
-        index = 3
-
-    something = {0: [*[first_Train_X], *[first_Train_Y], *[first_Test_X], *[first_Test_Y]],
-                 1: [*[second_Train_X], *[second_Train_Y], *[second_Test_X], *[second_Test_Y]],
-                 2: [*[third_Train_X], *[third_Train_Y], *[third_Test_X], *[third_Test_Y]],
-                 3: [*[fourth_Train_X], *[fourth_Train_Y], *[fourth_Test_X], *[fourth_Test_Y]]}
-
-    train_X = [row[:col] + row[col + 1:] for row in something[index][0]]
-    train_Y = [row for row in something[index][1]]
-    test_X = [row[:col] + row[col + 1:] for row in something[index][2]]
-    test_Y = [row for row in something[index][3]]
-    model.fit(train_X, train_Y)
-    modified_acc = model.predict(test_X)
-
-    print(f'Prosechna tochnost: {correctness / 4}')
-    print(f'Tochnost so otstraneta kolona: {accuracy_score(test_Y, modified_acc)}')
+    print(f'Prosechna tochnost: {sum(accuracies)/4}')
+    print(f'Tochnost so otstraneta kolona: {accuracy_latest}')
