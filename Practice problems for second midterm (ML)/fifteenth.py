@@ -1,6 +1,8 @@
 import os
+
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
+from sklearn.metrics import accuracy_score, recall_score
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -53,14 +55,18 @@ dataset = [
 ]
 
 if __name__ == '__main__':
-    #first x percent for training
     x = int(input())
+
+    model_NB = GaussianNB()
+    model_DTC = DecisionTreeClassifier(criterion='entropy',random_state=0)
+    model_RTC = RandomForestClassifier(n_estimators=4,criterion='entropy',random_state=0)
+    model_MLP = MLPClassifier(hidden_layer_sizes=(10,),activation='relu',learning_rate_init=0.001,random_state=0)
 
     class_0 = [row for row in dataset if row[-1] == 0]
     class_1 = [row for row in dataset if row[-1] == 1]
 
-    split_0 = int (len(class_0) * x / 100)
-    split_1 = int (len(class_1) * x / 100)
+    split_0 = int(len(class_0) * x / 100)
+    split_1 = int(len(class_1) * x / 100)
 
     train_X = [row[:-1] for row in class_0[:split_0]] + [row[:-1] for row in class_1[:split_1]]
     train_Y = [row[-1] for row in class_0[:split_0]] + [row[-1] for row in class_1[:split_1]]
@@ -68,62 +74,36 @@ if __name__ == '__main__':
     test_X = [row[:-1] for row in class_0[split_0:]] + [row[:-1] for row in class_1[split_1:]]
     test_Y = [row[-1] for row in class_0[split_0:]] + [row[-1] for row in class_1[split_1:]]
 
-    model_NB = GaussianNB()
-    model_DTC = DecisionTreeClassifier(criterion='entropy', random_state=0)
-    model_RTC = RandomForestClassifier(n_estimators=4, criterion='entropy', random_state=0)
-    model_MLP = MLPClassifier(hidden_layer_sizes=10, activation='relu', learning_rate_init=0.001, random_state=0, max_iter=50)
+    classifiers = [model_NB, model_DTC, model_RTC, model_MLP]
+    classifiers_names = ['Naive Bayes', 'Decision Tree', 'Random Forest', 'MLP']
+    accuracy_max = 0
+    index_max = 0
+    class_predictions = []
+    for i in range(4):
+        classifier = classifiers[i]
+        classifier.fit(train_X, train_Y)
+        prediction = classifier.predict(test_X)
+        class_predictions.append(prediction)
+        accuracy = accuracy_score(test_Y, prediction)
+        if accuracy > accuracy_max:
+            accuracy_max = accuracy
+            index_max = i
+    print(f'Najgolema tocnost ima klasifikatorot {classifiers_names[index_max]}')
 
-    model_NB.fit(train_X, train_Y)
-    model_DTC.fit(train_X, train_Y)
-    model_RTC.fit(train_X, train_Y)
-    model_MLP.fit(train_X, train_Y)
 
-    prediction_NB = model_NB.predict(test_X)
-    prediction_DTC = model_DTC.predict(test_X)
-    prediction_RTC = model_RTC.predict(test_X)
-    prediction_MLP = model_MLP.predict(test_X)
-
-    accuracy_NB = sum (1 for value,prediction in zip(test_Y, prediction_NB) if value == prediction) / len(test_Y)
-    accuracy_DTC = sum (1 for value,prediction in zip(test_Y, prediction_DTC) if value == prediction) / len(test_Y)
-    accuracy_RTC = sum (1 for value,prediction in zip(test_Y, prediction_RTC) if value == prediction) / len(test_Y)
-    accuracy_MLP = sum (1 for value,prediction in zip(test_Y, prediction_MLP) if value == prediction) / len(test_Y)
-
-    predictions_global = {0 : [*prediction_NB], 1 : [*prediction_DTC], 2 : [*prediction_RTC], 3 : [*prediction_MLP]}
-    index_best = 0
-
-    if accuracy_NB >= accuracy_DTC and accuracy_NB >= accuracy_RTC and accuracy_NB >= accuracy_MLP:
-        print("Najgolema tocnost ima klasifikatorot Naive Bayes")
-        index_best = 0
-    elif accuracy_DTC >= accuracy_NB and accuracy_DTC >= accuracy_RTC and accuracy_DTC >= accuracy_MLP:
-        print("Najgolema tocnost ima klasifikatorot Decision Tree")
-        index_best = 1
-    elif accuracy_RTC >= accuracy_NB and accuracy_RTC >= accuracy_DTC and accuracy_RTC >= accuracy_MLP:
-        print("Najgolema tocnost ima klasifikatorot Random Forest")
-        index_best = 2
-    else:
-        print("Najgolema tocnost ima klasifikatorot MLP")
-        index_best = 3
-
-    predictions_final = []
-
-    for i in range(len(test_X)):
-        votes = {0 : 0, 1 : 0}
-        for j in range(4):
-            temp = predictions_global[j][i]
-            if j == index_best:
-                votes[temp] += 2
+    predictions_ensemble = []
+    for index,element in enumerate(test_X):
+        predictions = {0 : 0, 1 : 0}
+        for i in range(4):
+            if i == index_max:
+                predictions[class_predictions[i][index]] += 2
             else:
-                votes[temp] += 1
-        if votes[0] > votes[1]:
-            predictions_final.append(0)
+                predictions[class_predictions[i][index]] += 1
+        if predictions[0] >= predictions[1]:
+            predictions_ensemble.append(0)
         else:
-            predictions_final.append(1)
+            predictions_ensemble.append(1)
 
-    TP = sum (1 for values,predictions in zip(test_Y, predictions_final) if values == 1 and predictions == 1)
-    FP = sum (1 for values,predictions in zip(test_Y, predictions_final) if values == 0 and predictions == 1)
-    TN = sum (1 for values,predictions in zip(test_Y, predictions_final) if values == 0 and predictions == 0)
-    FN = sum (1 for values,predictions in zip(test_Y, predictions_final) if values == 1 and predictions == 0)
+    recall_ensemble = recall_score(test_Y, predictions_ensemble)
 
-    recall = TP / (TP + FN)
-
-    print(f'Odzivot na kolekcijata so klasifikatori e {recall}')
+    print(f'Odzivot na kolekcijata so klasifikatori e {recall_ensemble}')
