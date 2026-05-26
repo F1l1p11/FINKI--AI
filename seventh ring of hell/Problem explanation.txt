@@ -21,3 +21,72 @@ On what dataset the MLP classifier had the best accuracy and the accuracy of the
 And you should also print the accuracy of both classifiers on the scaled dataset.
 
 For you to obtain the same results as the ones in the test cases you need to put random_state=0 in both the classifiers
+
+
+================================================================================================================================================
+Explenation using chatgpt bellow
+================================================================================================================================================
+
+
+There is given a dataset where each sample contains a random number of features and a class label (melody or rhythm).
+
+You need to construct a new dataset where each sample is transformed into 5 new features:
+
+The maximum element of the sample
+max(x)
+
+The mean value of the sample
+
+       Σxᵢ
+μ = ───────
+         n
+The length of the sample
+n
+
+The sum of all elements multiplied by the mean and divided by the length of the sample
+
+    Σ(xᵢ · μ)
+───────────────
+        n
+
+The sum of absolute differences between consecutive elements divided by the mean
+
+Σ|xᵢ - xᵢ₋₁|
+─────────────
+       μ
+
+After generating the new dataset:
+
+Use the first 70% of the samples for training.
+Use the remaining 30% for testing.
+
+You need to train the following classifiers:
+
+A Decision Tree classifier with maximum depth M read from standard input.
+An MLP classifier with N hidden neurons read from standard input.
+
+For both classifiers:
+
+Train and evaluate them using all 5 generated features.
+Then repeat the training 5 more times, each time removing exactly one feature from the dataset.
+Keep track of:
+which dataset configuration gives the best accuracy for the Decision Tree
+which dataset configuration gives the best accuracy for the MLP classifier
+
+After finding the best dataset for each classifier:
+
+Scale the corresponding dataset using StandardScaler
+Retrain the classifier on the scaled data
+Compute the new accuracy
+
+Finally, print:
+
+Which dataset configuration produced the best accuracy for the Decision Tree and its accuracy
+Which dataset configuration produced the best accuracy for the MLP classifier and its accuracy
+The accuracy of both classifiers after scaling
+
+To obtain the same results as the test cases, use:
+
+random_state=0
+
+in both classifiers.
