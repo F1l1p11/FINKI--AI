@@ -1,0 +1,23 @@
+There is given a dataset with random number of features for the sample and a class, melody or rhythm.
+You need to make a new dataset in the following way:
+1.The max element of the sample
+2.The mean of the sample
+3.The length of the sample
+4.Elements of the sample * the mean of the sample / the length of the sample
+5.Sum starting from the second element of the sample - the element before that, the abs of this / by the mean of the sample
+
+You need to split the new dataset so that the first 70% are used for the training of the classifiers and the last 30 are used for testing.
+You need to train 2 classifiers:
+-A decision tree with max depth equal to the parameter M read from SI
+-A MLP classifier with the number of hidden layer N read from SI
+
+You need to train this classifiers with the original dataset and then you need to train them with removing 1 feature from the dataset.
+You need to keep track of what the best dataset was for the decision tree classifier and what the best dataset was for the MLP classifier and then
+you need to scale this two datasets using the StandardScaler and then see what the accuracy of the decision tree is on the scaled dataset and what the MLP classifier
+accuracy is on the scaled dataset.
+
+On standard output you should print with what dataset the decision tree had the best accuracy and the accuracy of the decision tree.
+On what dataset the MLP classifier had the best accuracy and the accuracy of the classifier.
+And you should also print the accuracy of both classifiers on the scaled dataset.
+
+For you to obtain the same results as the ones in the test cases you need to put random_state=0 in both the classifiers
